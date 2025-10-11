@@ -1,27 +1,26 @@
-from typing import Literal
+from enum import StrEnum
+from uuid import UUID, uuid4
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, NonNegativeInt
 
 
-class BaseMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    chat_id: str
+class Role(StrEnum):
+    USER = "user"
+    AI = "ai"
+
+
+class Message(BaseModel):
+    id: UUID = Field(default_factory=uuid4)
+    chat_id: UUID
+    role: Role
     text: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserMessage(BaseMessage):
-    role: str = "user"
-
-
-class AssistantMessage(BaseMessage):
-    role: str = "assistant"
-
-
-class ChatPage(BaseModel):
-    total: int
-    page: int
-    limit: int
+class ChatHistory(BaseModel):
+    total_count: int
+    page: NonNegativeInt
+    limit: NonNegativeInt
     chat_id: str
-    messages: list[BaseMessage]
+    messages: list[Message]

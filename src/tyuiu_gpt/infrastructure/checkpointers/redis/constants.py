@@ -1,5 +1,0 @@
-
-
-REDIS_KEY_SEPARATOR = "$"
-
-TTL = 3600

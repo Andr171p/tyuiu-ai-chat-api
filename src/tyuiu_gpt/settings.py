@@ -1,71 +1,91 @@
-import os
+from typing import Final, Literal
+
+from pathlib import Path
+
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from pydantic_settings import BaseSettings
-
-from .constants import ENV_PATH, PG_DRIVER
-
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_PATH = BASE_DIR / ".env"
 
 load_dotenv(ENV_PATH)
 
 
 class EmbeddingsSettings(BaseSettings):
-    MODEL_NAME: str = os.getenv("EMBEDDINGS_MODEL_NAME")
-    MODEL_KWARGS: dict = {"device": "cpu"}
-    ENCODE_KWARGS: dict = {'normalize_embeddings': False}
+    base_url: str = "http://127.0.0.1:8000"
+
+    model_config = SettingsConfigDict(env_prefix="EMBEDDINGS_")
 
 
 class ElasticsearchSettings(BaseSettings):
-    ELASTIC_HOST: str = os.getenv("ELASTIC_HOST")
-    ELASTIC_PORT: int = os.getenv("ELASTIC_PORT")
-    ELASTIC_USER: str = os.getenv("ELASTIC_USER")
-    ELASTIC_PASSWORD: str = os.getenv("ELASTIC_PASSWORD")
+    host: str = "localhost"
+    port: int = 9200
+    user: str = "esuser"
+    password: str = "espassword"
+
+    model_config = SettingsConfigDict(env_prefix="ELASTICSEARCH_")
 
     @property
-    def elasticsearch_url(self) -> str:
-        return f"http://{self.ELASTIC_HOST}:{self.ELASTIC_PORT}"
+    def url(self) -> str:
+        return f"http://{self.host}:{self.port}"
+
+    @property
+    def auth(self) -> tuple[str, str]:
+        return self.user, self.password
 
 
 class RedisSettings(BaseSettings):
-    REDIS_HOST: str = os.getenv("REDIS_HOST")
-    REDIS_PORT: int = os.getenv("REDIS_PORT")
+    host: str = "localhost"
+    port: int = 6379
+
+    model_config = SettingsConfigDict(env_prefix="REDIS_")
 
     @property
-    def redis_url(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
+    def url(self) -> str:
+        return f"redis://{self.host}:{self.port}/0"
 
 
 class PostgresSettings(BaseSettings):
-    PG_HOST: str = os.getenv("POSTGRES_HOST")
-    PG_PORT: int = os.getenv("POSTGRES_PORT")
-    PG_USER: str = os.getenv("POSTGRES_USER")
-    PG_PASSWORD: str = os.getenv("POSTGRES_PASSWORD")
-    PG_DB: str = os.getenv("POSTGRES_DB")
+    host: str = "localhost"
+    port: int = 5432
+    user: str = "pguser"
+    password: str = "pgpassword"
+    db: str = "postgres"
+    driver: Literal["asyncpg"] = "asyncpg"
+
+    model_config = SettingsConfigDict(env_prefix="POSTGRES_")
 
     @property
     def sqlalchemy_url(self) -> str:
-        return f"postgresql+{PG_DRIVER}://{self.PG_USER}:{self.PG_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}/{self.PG_DB}"
+        return f"postgresql+{self.driver}://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
 
 
 class RabbitSettings(BaseSettings):
-    RABBIT_HOST: str = os.getenv("RABBIT_HOST")
-    RABBIT_PORT: int = os.getenv("RABBIT_PORT")
-    RABBIT_USER: str = os.getenv("RABBIT_USER")
-    RABBIT_PASSWORD: str = os.getenv("RABBIT_PASSWORD")
+    host: str = "localhost"
+    port: int = 5672
+    user: str = "rabbituser"
+    password: str = "rabbitpassword"
+
+    model_config = SettingsConfigDict(env_prefix="RABBIT_")
 
     @property
-    def rabbit_url(self) -> str:
-        return f"amqp://{self.RABBIT_USER}:{self.RABBIT_PASSWORD}@{self.RABBIT_HOST}:{self.RABBIT_PORT}/"
+    def url(self) -> str:
+        return f"amqp://{self.user}:{self.password}@{self.host}:{self.port}/"
 
 
 class GigaChatSettings(BaseSettings):
-    API_KEY: str = os.getenv("GIGACHAT_API_KEY")
-    SCOPE: str = os.getenv("GIGACHAT_SCOPE")
+    apikey: str = ""
+    scope: str = ""
+    model_name: str = "GigaChat:lite"
+
+    model_config = SettingsConfigDict(env_prefix="GIGACHAT_")
 
 
 class YandexGPTSettings(BaseSettings):
-    FOLDER_ID: str = os.getenv("YANDEX_FOLDER_ID")
-    API_KEY: str = os.getenv("YANDEX_GPT_API_KEY")
+    folder_id: str = ""
+    apikey: str = ""
+
+    model_config = SettingsConfigDict(env_prefix="YANDEXGPT_")
 
 
 class Settings(BaseSettings):
@@ -74,5 +94,8 @@ class Settings(BaseSettings):
     redis: RedisSettings = RedisSettings()
     postgres: PostgresSettings = PostgresSettings()
     rabbit: RabbitSettings = RabbitSettings()
-    giga_chat: GigaChatSettings = GigaChatSettings()
-    yandex_gpt: YandexGPTSettings = YandexGPTSettings()
+    gigachat: GigaChatSettings = GigaChatSettings()
+    yandexgpt: YandexGPTSettings = YandexGPTSettings()
+
+
+settings: Final[Settings] = Settings()
