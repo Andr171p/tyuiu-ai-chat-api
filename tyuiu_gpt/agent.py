@@ -11,6 +11,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from .depends import llm, redis, retriever
+from .prompts import SYSTEM_PROMPT, USER_PROMPT
 
 TTL = 3600
 MAX_CHAT_HISTORY_LENGTH = 10
@@ -61,8 +62,10 @@ async def generate(
 ) -> dict[str, str]:
     """Генерирует ответ на запрос пользователя"""
     logger.info("---GENERATE ---")
-    user_prompt = ...
-    chain = ChatPromptTemplate.from_template(...) | llm | StrOutputParser()
+    user_prompt = USER_PROMPT.format(
+        conversation_history="\n".join(state["conversation_history"]), query=state["query"]
+    )
+    chain = ChatPromptTemplate.from_template(SYSTEM_PROMPT) | llm | StrOutputParser()
     response = await chain.ainvoke({
         "user_prompt": user_prompt, "context": format_documents(state["documents"]),
     })

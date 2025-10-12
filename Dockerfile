@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.13-slim
 
 WORKDIR /tyuiu_gpt
 
@@ -7,8 +7,6 @@ COPY requirements.txt .
 RUN pip install --upgrade pip
 
 RUN pip install -r requirements.txt
-
-RUN python -c "from transformers import AutoModel; AutoModel.from_pretrained('intfloat/multilingual-e5-large')"
 
 COPY . .
 
