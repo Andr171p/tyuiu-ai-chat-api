@@ -22,5 +22,5 @@ class ChatHistory(BaseModel):
     total_count: int
     page: NonNegativeInt
     limit: NonNegativeInt
-    chat_id: str
+    chat_id: UUID
     messages: list[Message]

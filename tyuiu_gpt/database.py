@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from .exceptions import CreationError, DataConflictError, ReadingError
 from .schemas import ChatHistory, Message
 from .settings import settings
 
@@ -59,10 +60,12 @@ async def add_messages(messages: list[Message]) -> None:
             values = [message.model_dump() for message in messages]
             await session.execute(stmt, values)
             await session.commit()
-    except SQLAlchemyError:
-        ...
-    except IntegrityError:
-        ...
+    except SQLAlchemyError as e:
+        await session.rollback()
+        raise CreationError(f"Error occurred while messages adding, error: {e}") from e
+    except IntegrityError as e:
+        await session.rollback()
+        raise DataConflictError(f"Conflict while messages adding, error: {e}") from e
 
 
 async def read_message(id: UUID) -> Message | None:  # noqa: A002
@@ -76,8 +79,8 @@ async def read_message(id: UUID) -> Message | None:  # noqa: A002
             result = await session.execute(stmt)
             model = result.scalar_one_or_none()
         return Message.model_validate(model) if model else None
-    except SQLAlchemyError:
-        ...
+    except SQLAlchemyError as e:
+        raise ReadingError(f"Error occurred while reading messages, error: {e}") from e
 
 
 async def read_chat_history(
@@ -103,5 +106,5 @@ async def read_chat_history(
             return ChatHistory(
                 total_count=total_count, page=page, limit=limit, chat_id=chat_id, messages=messages
             )
-    except SQLAlchemyError:
-        ...
+    except SQLAlchemyError as e:
+        raise ReadingError(f"Error occurred while reading chat history, error: {e}") from e
