@@ -18,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def open_temp_file(data: bytes) -> AsyncGenerator[AsyncFileIO]:
+    """Контекстный менеджер для открытия и работы с временным файлом.
+
+    :param data: Данные (поток байтов), которые нужно записать в файл.
+    """
     async with aiofiles.tempfile.NamedTemporaryFile(
             mode="wb", encoding="utf-8"
     ) as file:
@@ -27,6 +31,12 @@ async def open_temp_file(data: bytes) -> AsyncGenerator[AsyncFileIO]:
 
 
 async def process_file(file: AsyncFileIO) -> list[Document]:
+    """Обрабатывает и преобразует открытый файл в формат Markdown,
+    после чего выполняется разделение по h1 заголовкам.
+
+    :param file: Открытый временный файл.
+    :return Список документов после разбиения по h1.
+    """
     filename = await file.name
     extension = str(filename).split(".")[-1]
     if extension not in AVAILABLE_EXTENSIONS:
@@ -52,6 +62,7 @@ async def process_file(file: AsyncFileIO) -> list[Document]:
 
 
 async def persist_documents(documents: list[Document]) -> list[Document]:
+    """Сохраняет проиндексированные документы в хранилище (базу знаний)"""
     await vectorstore.aadd_documents(documents)
     logger.info("Documents successfully persisted")
     return documents
