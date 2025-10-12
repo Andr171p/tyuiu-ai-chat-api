@@ -1,13 +1,25 @@
+FROM python:3.13-slim as builder
+
+WORKDIR /tyuiu_gpt
+
+RUN pip install --no-cache-dir uv && \
+    uv venv -p python3.13 /opt/venv
+
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY pyproject.toml requirements.txt ./
+
+RUN uv pip install --no-cache -r requirements.txt
+
 FROM python:3.13-slim
 
 WORKDIR /tyuiu_gpt
 
-COPY requirements.txt .
+COPY --from=builder /opt/venv /opt/venv
 
-RUN pip install --upgrade pip
-
-RUN pip install -r requirements.txt
+ENV PATH="/opt/venv/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
 
 COPY . .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD alembic upgrade head && python main.py

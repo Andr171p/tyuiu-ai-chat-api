@@ -1,10 +1,14 @@
 from typing import Final
 
+from elasticsearch import Elasticsearch
 from embeddings_service.langchain import RemoteHTTPEmbeddings
+from langchain.retrievers import EnsembleRetriever
+from langchain_community.retrievers import ElasticSearchBM25Retriever
 from langchain_core.embeddings import Embeddings
 from langchain_core.language_models import BaseChatModel
 from langchain_core.retrievers import BaseRetriever
-from langchain_core.vectorstores import VectorStore
+from langchain_core.vectorstores import VectorStore, VectorStoreRetriever
+from langchain_elasticsearch import ElasticsearchStore
 from langchain_gigachat import GigaChat
 from langchain_text_splitters import (
     MarkdownHeaderTextSplitter,
@@ -37,9 +41,25 @@ embeddings: Final[Embeddings] = RemoteHTTPEmbeddings(
     base_url=settings.embeddings.base_url, normalize_embeddings=False, timeout=TIMEOUT
 )
 
-vectorstore: Final[VectorStore] = ...
+elasticsearch: Final[Elasticsearch] = Elasticsearch(settings.elasticsearch.url)
 
-retriever: Final[BaseRetriever] = ...
+vectorstore: Final[VectorStore] = ElasticsearchStore(
+    es_url=settings.elasticsearch.url,
+    index_name="rag-index",
+    embedding=embeddings,
+)
+
+vectorstore_retriever: Final[VectorStoreRetriever] = vectorstore.as_retriever(
+    search_type="similarity"
+)
+
+bm25_retriever: Final[BaseRetriever] = ElasticSearchBM25Retriever(
+    client=elasticsearch, index_name="rag-index"
+)
+
+retriever: Final[BaseRetriever] = EnsembleRetriever(
+    retrievers=[vectorstore_retriever, bm25_retriever], weights=[0.6, 0.4]
+)
 
 llm: Final[BaseChatModel] = GigaChat(
     credentials=settings.gigachat.apikey,

@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from pydantic import NonNegativeInt
 from sqlalchemy import CheckConstraint, DateTime, Text, func, insert, select
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncAttrs,
@@ -29,7 +30,7 @@ sessionmaker: Final[async_sessionmaker[AsyncSession]] = async_sessionmaker(
 class Base(AsyncAttrs, DeclarativeBase):
     __abstract__ = True
 
-    id: Mapped[int] = mapped_column(
+    id: Mapped[UUID] = mapped_column(
         primary_key=True,
         default=uuid4,
         server_default=func.gen_random_uuid()
@@ -40,12 +41,12 @@ class Base(AsyncAttrs, DeclarativeBase):
 class MessageModel(Base):
     __tablename__ = "messages"
 
-    chat_id: Mapped[UUID]
+    chat_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), unique=False)
     role: Mapped[str]
     text: Mapped[str] = mapped_column(Text)
 
     __table_args__ = (
-        CheckConstraint("role IN ('user', 'assistant')", name="check_role_values"),
+        CheckConstraint("role IN ('user', 'ai')", name="check_role_values"),
     )
 
 

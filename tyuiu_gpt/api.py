@@ -27,7 +27,7 @@ from pydantic import NonNegativeInt
 from .agent import agent
 from .broker import broker, faststream_app, message_exchange
 from .database import read_chat_history, read_message
-from .depends import get_connection_manager, retriever
+from .depends import elasticsearch, get_connection_manager, retriever
 from .exceptions import AppError
 from .indexing import indexing_chain, open_temp_file
 from .schemas import ChatHistory, Message, Role
@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    if not elasticsearch.indices.exists(index="rag-index"):
+        elasticsearch.indices.create(index="rag-index")
     await faststream_app.broker.start()
     logger.info("Broker started")
     yield
