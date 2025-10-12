@@ -13,11 +13,13 @@ from fastapi import (
     File,
     HTTPException,
     Query,
+    Request,
     UploadFile,
     WebSocket,
     WebSocketDisconnect,
     status,
 )
+from fastapi.responses import JSONResponse
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableConfig
 from pydantic import NonNegativeInt
@@ -26,6 +28,7 @@ from .agent import agent
 from .broker import broker, faststream_app, message_exchange
 from .database import read_chat_history, read_message
 from .depends import get_connection_manager, retriever
+from .exceptions import AppError
 from .indexing import indexing_chain, open_temp_file
 from .schemas import ChatHistory, Message, Role
 from .websockets import ConnectionManager
@@ -144,3 +147,23 @@ async def chat(
         )
     except WebSocketDisconnect:
         await connection_manager.disconnect(chat_id)
+
+
+@app.exception_handler(AppError)
+def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
+    logger.error(exc)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": str(exc)}
+    )
+
+
+@app.exception_handler(ValueError)
+def handle_value_error(request: Request, exc: ValueError) -> JSONResponse:
+    logger.error(exc)
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)}
+    )
+
+
+app.include_router(api_router)
+app.include_router(ws_router)
