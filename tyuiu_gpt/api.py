@@ -150,7 +150,7 @@ async def chat(
 
 
 @app.exception_handler(AppError)
-def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
+def handle_app_error(request: Request, exc: AppError) -> JSONResponse:  # noqa: ARG001
     logger.error(exc)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": str(exc)}
@@ -158,7 +158,7 @@ def handle_app_error(request: Request, exc: AppError) -> JSONResponse:
 
 
 @app.exception_handler(ValueError)
-def handle_value_error(request: Request, exc: ValueError) -> JSONResponse:
+def handle_value_error(request: Request, exc: ValueError) -> JSONResponse:  # noqa: ARG001
     logger.error(exc)
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST, content={"detail": str(exc)}
